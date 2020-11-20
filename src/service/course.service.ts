@@ -110,7 +110,9 @@ export class CourseService {
              for(let entity of entities) {  
                 let studentEnrolment = await getManager().createQueryBuilder(Enrolment, 'enrolment')
                 .leftJoinAndSelect("enrolment.course", "course")
+                .leftJoinAndSelect("enrolment.student", "student")
                 .where("course.id = :id", { id: entity.id })
+                .andWhere("student.id=:studentId", {studentId : student_id})
                 .getMany();
                 let enrolled = false;
                 if(studentEnrolment && studentEnrolment.length >0) {
