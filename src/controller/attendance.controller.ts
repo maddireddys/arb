@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AttendanceDto } from 'src/dto/AttendanceDto';
 import { ResponseDto } from 'src/dto/ResponseDto';
 import { AuthGuard } from 'src/guard/AuthGuard';
@@ -11,7 +11,12 @@ export class AttendanceController {
   @Post('/add')
   @UseGuards(AuthGuard)
   async registerUser(@Body() attendanceDto: AttendanceDto): Promise<ResponseDto> {
-    console.log('control add start:'+JSON.stringify(attendanceDto));
     return await this.attendanceService.addAttendance(attendanceDto);
+  }
+
+  @Get('/load/:courseId/:studentId')
+  @UseGuards(AuthGuard)
+  async loadAttendance(@Param() params): Promise<ResponseDto> {
+    return await this.attendanceService.loadStudentAttendance(params.studentId, params.courseId);
   }
 }

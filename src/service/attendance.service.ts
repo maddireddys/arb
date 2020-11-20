@@ -26,55 +26,46 @@ export class AttendanceService {
         const dtos = Array.from(attendanceDtos);
         return await getManager().transaction(async transactionalEntityManager => {
             const data: any = [];
-            await dtos.forEach(async element => {
+            for(const element of  attendanceDtos) {
+                console.log(element);
                 const attendanceDto = plainToClass(AttendanceDto, element);
                 const user = await this.userService.findById(attendanceDto.studentId);
                 const course = await this.courseService.findById(attendanceDto.courseId);
                 const enrolment = await this.courseService.findEnrolment(attendanceDto.enrolmentId);
-                const attendance = new Attendance();
+                let attendance = new Attendance();
                 attendance.status = attendanceDto.status;
                 attendance.course = course;
                 attendance.student = user;
                 attendance.enrolment = enrolment;
                 attendance.date = attendanceDto.date;
-                data.push(enrolment);
-            });
+                attendance = await transactionalEntityManager.save(attendance);
+                data.push(attendance);
+            }
             resp.status = RespStatus.SUCCESS;
 			resp.data = data;
 			return resp;
         });
     }
 
-    async loadStudentAttendance(studentId: number, from: Date, to:Date): Promise<ResponseDto> {
+    async loadStudentAttendance(studentId: number, courseId: number): Promise<ResponseDto> {
 		let resp = new ResponseDto();
         resp.status = RespStatus.FAILED;
         const attendances = await getManager().createQueryBuilder(Attendance, 'attendance')
         .leftJoinAndSelect("attendance.student", "student")
-        .where("student.id = :id", { studentId })
+        .leftJoinAndSelect("attendance.course", "course")
+        .where("student.id = :studentId", { studentId:studentId })
+        .andWhere("course.id=:courseId", {courseId:courseId})
         .getMany();
         const enrolment_resp : any =  [];
-        let courseMap = new Map();  
-        attendances.forEach(element => {
-            let courses = courseMap.get(element.course.name);
+        for(let element of attendances) {
             let attendanceResp = new AttendanceDetails();
             attendanceResp.date = element.date;
             attendanceResp.courseId = element.course.id;
             attendanceResp.courseName = element.course.name;
             attendanceResp.status = element.status;
-            if(courses) {
-                courses.push(attendanceResp);
-            } else {
-                courses = [];
-                courseMap.set(element.course.name, courses);
-                courses.push(attendanceResp);
-            }
-        });
-        for (let entry of courseMap.entries()) {  
-            let attendanceRep = new AttendanceResp();
-            attendanceRep.courseName = entry[0];
-            attendanceRep.details = entry[1];   
-            enrolment_resp.push(attendanceRep); 
-        }  
+            enrolment_resp.push(attendanceResp);
+        }
+        
         resp.status = RespStatus.SUCCESS;
 		resp.data = enrolment_resp;
 		return resp;

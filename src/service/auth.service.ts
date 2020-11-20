@@ -64,7 +64,7 @@ export class AuthService {
             return ret;
           } 
 
-            throw new UnauthorizedException();
+            throw new UnauthorizedException("Invalid token");
       }
       async logout(user: any): Promise<any> {
         await this.cacheManager.del(user.id);
